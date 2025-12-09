@@ -13,6 +13,20 @@ import { ConfigService } from '@nestjs/config';
 
 const HASH_SALT_ROUNDS = 10;
 
+type Tokens = {
+  access: string;
+  refresh: string;
+};
+
+type UserResponse = {
+  id: string;
+  username: string;
+  birthdate: string;
+  email: string;
+  level: number;
+  xp: number;
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -21,7 +35,10 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async register({ password, ...dto }: RegisterDto) {
+  async register({
+    password,
+    ...dto
+  }: RegisterDto): Promise<UserResponse & Tokens> {
     const isUserExists = await this.usersService.findByEmail(dto.email);
 
     if (isUserExists) {
@@ -35,10 +52,20 @@ export class AuthService {
       passwordHash,
     });
 
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+
+    return {
+      ...tokens,
+      id: user.id,
+      username: user.username,
+      birthdate: user.birthDate.toISOString(),
+      email: user.email,
+      level: user.level,
+      xp: user.xp,
+    };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto): Promise<UserResponse & Tokens> {
     const { email } = dto;
 
     const user = await this.usersService.findByEmail(email);
@@ -52,7 +79,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    return this.generateTokens(user);
+    const tokens = await this.generateTokens(user);
+
+    return {
+      ...tokens,
+      id: user.id,
+      username: user.username,
+      birthdate: user.birthDate.toISOString(),
+      email: user.email,
+      level: user.level,
+      xp: user.xp,
+    };
   }
 
   async refresh(refreshToken: string) {
@@ -92,15 +129,12 @@ export class AuthService {
   private async generateTokens(user: User) {
     const payload = { sub: user.id, email: user.email };
 
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const access = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refresh = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-    const hashedRefreshToken = await bcrypt.hash(
-      refreshToken,
-      HASH_SALT_ROUNDS,
-    );
+    const hashedRefreshToken = await bcrypt.hash(refresh, HASH_SALT_ROUNDS);
     await this.usersService.setCurrentRefreshToken(user.id, hashedRefreshToken);
 
-    return { accessToken, refreshToken };
+    return { access, refresh };
   }
 }
