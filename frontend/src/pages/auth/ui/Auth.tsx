@@ -8,7 +8,7 @@ import { Register } from './Register';
 type Mode = 'register' | 'login';
 
 const Auth = () => {
-    const [mode, setMode] = useState<Mode>('register');
+    const [mode, setMode] = useState<Mode>('login');
     const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
 
     const toggleMode = () => {
@@ -20,8 +20,8 @@ const Auth = () => {
             const nx = e.clientX / window.innerWidth - 0.5;
             const ny = e.clientY / window.innerHeight - 0.5;
 
-            const rx = ny * -8; // наклон по X
-            const ry = nx * 8; // наклон по Y
+            const rx = ny * -8;
+            const ry = nx * 8;
 
             setTilt({ rx, ry });
         };

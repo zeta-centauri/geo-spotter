@@ -1,24 +1,29 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Flex } from '@chakra-ui/react';
 
+import { useLoginMutation } from 'shared/api/auth';
+import { setUserInfo } from 'shared/lib';
 import { Field } from 'shared/ui';
-
-import { useLoginMutation } from '../model/api';
 
 export const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
+    const navigate = useNavigate();
+
     const [loginUser, { isLoading }] = useLoginMutation();
 
     const handleSubmit = async () => {
         try {
-            await loginUser({
+            const userData = await loginUser({
                 email,
                 password,
             }).unwrap();
 
-            // navigate('/lessons');
+            setUserInfo(userData);
+
+            navigate('/home');
         } catch (error) {
             console.error(error);
         }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, User } from 'generated/prisma/client';
@@ -6,62 +6,71 @@ import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prismaService: PrismaService) {}
+    constructor(private readonly prismaService: PrismaService) {}
 
-  async create(dto: CreateUserDto): Promise<User> {
-    const user = await this.prismaService.user.create({
-      data: {
-        username: dto.username,
-        email: dto.email,
-        passwordHash: dto.passwordHash,
-        birthDate: dto.birthdate,
-      },
-    });
+    async create(dto: CreateUserDto): Promise<User> {
+        const user = await this.prismaService.user.create({
+            data: {
+                username: dto.username,
+                email: dto.email,
+                passwordHash: dto.passwordHash,
+                birthDate: dto.birthdate,
+            },
+        });
 
-    return user;
-  }
+        return user;
+    }
 
-  async findById(id: string): Promise<User | null> {
-    return await this.prismaService.user.findFirst({
-      where: { id },
-    });
-  }
+    async findById(id: string): Promise<User | null> {
+        return await this.prismaService.user.findFirst({
+            where: { id },
+        });
+    }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return await this.prismaService.user.findFirst({
-      where: { email },
-    });
-  }
+    async findByEmail(email: string): Promise<User | null> {
+        return await this.prismaService.user.findFirst({
+            where: { email },
+        });
+    }
 
-  async findAll(): Promise<User[]> {
-    return await this.prismaService.user.findMany();
-  }
+    async findAll(): Promise<User[]> {
+        return await this.prismaService.user.findMany();
+    }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const { username, email, birthdate } = updateUserDto;
+    async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+        const { username, email, birthdate } = updateUserDto;
 
-    const data: Prisma.UserUpdateInput = {};
+        const isUserExist = await this.prismaService.user.findFirst({
+            where: { id },
+        });
 
-    if (username) data.username = username;
-    if (email) data.email = email;
-    if (birthdate) data.birthDate = new Date(birthdate);
+        if (!isUserExist) {
+            throw new NotFoundException(`User with id ${id} is not exist`);
+        }
 
-    const user = await this.prismaService.user.update({
-      data,
-      where: { id },
-    });
+        const data: Prisma.UserUpdateInput = {};
 
-    return user;
-  }
+        if (username) data.username = username;
+        if (email) data.email = email;
+        if (birthdate) data.birthDate = new Date(birthdate);
 
-  async remove(id: string) {
-    await this.prismaService.user.delete({ where: { id } });
-  }
+        const user = await this.prismaService.user.update({
+            data,
+            where: { id },
+        });
 
-  async setCurrentRefreshToken(userId: string, token: string) {
-    await this.prismaService.user.update({
-      where: { id: userId },
-      data: { currentHashedRefreshToken: token },
-    });
-  }
+        return user;
+    }
+
+    async remove(id: string) {
+        await this.prismaService.user.delete({ where: { id } });
+    }
+
+    async updateAvatar(userId: string, filename: string) {
+        const avatarUrl = `/uploads/avatars/${filename}`;
+        return this.prismaService.user.update({
+            where: { id: userId },
+            data: { avatarUrl },
+        });
+    }
 }

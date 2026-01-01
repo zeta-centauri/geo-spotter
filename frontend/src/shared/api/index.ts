@@ -1,1 +1,2 @@
-export * as authEndpoints from './endpoints/auth';
+export { apiMethods } from './constants';
+export { api } from './api';

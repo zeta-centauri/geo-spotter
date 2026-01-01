@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button, Flex } from '@chakra-ui/react';
 
+import { useRegisterMutation } from 'shared/api/auth';
+import { setUserInfo } from 'shared/lib';
 import { Field } from 'shared/ui';
-
-import { useRegisterMutation } from '../model/api';
 
 export const Register = () => {
     const [username, setUsername] = useState('');
@@ -11,19 +12,24 @@ export const Register = () => {
     const [password, setPassword] = useState('');
     const [birthdate, setBirthdate] = useState('');
 
+    const navigate = useNavigate();
+
     const [registerUser, { isLoading }] = useRegisterMutation();
 
     const handleSubmit = async () => {
         try {
             const formattedBirthdate = new Date(birthdate).toISOString();
 
-            await registerUser({
+            const userData = await registerUser({
                 email,
                 password,
                 username,
                 birthdate: formattedBirthdate,
             }).unwrap();
-            // navigate('/lessons');
+
+            setUserInfo(userData);
+
+            navigate('/home');
         } catch (err) {
             console.error(err);
         }

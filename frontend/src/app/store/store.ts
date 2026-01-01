@@ -1,20 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 
-import { rtkApi } from 'shared/api/rtkApi';
+import { api } from 'shared/api/api';
 
 import { reducers } from './reducers';
 import { register } from './storeRegistry';
 
 export const store = configureStore({
-    reducer: { ...reducers, [rtkApi.reducerPath]: rtkApi.reducer },
+    reducer: { ...reducers, [api.reducerPath]: api.reducer },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(rtkApi.middleware),
+        getDefaultMiddleware().concat(api.middleware),
 });
-
-// store.subscribe(() => {
-//     const userState = store.getState().user;
-//     setUserInfo(userState);
-// });
 
 register(store);
 

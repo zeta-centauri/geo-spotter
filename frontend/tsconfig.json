@@ -10,6 +10,7 @@
     ],
     "compilerOptions": {
         "baseUrl": ".",
+
         "paths": {
             "app/*": ["./src/app/*"],
             "css/*": ["./src/css/*"],
@@ -19,7 +20,13 @@
             "shared/*": ["./src/shared/*"],
             "widgets/*": ["./src/widgets/*"],
             "assets/*": ["./src/assets/*"],
-            "components/*": ["./src/components/*"]
-        }
+            "components/*": ["./src/components/*"],
+            "ymaps3": ["./node_modules/@yandex/ymaps3-types"]
+        },
+
+        "typeRoots": [
+            "./node_modules/@types",
+            "./node_modules/@yandex/ymaps3-types"
+        ]
     }
 }

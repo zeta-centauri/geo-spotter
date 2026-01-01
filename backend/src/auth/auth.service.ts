@@ -1,7 +1,8 @@
 import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException,
+    ConflictException,
+    Injectable,
+    NotFoundException,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -10,131 +11,137 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { User } from 'generated/prisma/client';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 const HASH_SALT_ROUNDS = 10;
 
 type Tokens = {
-  access: string;
-  refresh: string;
+    access: string;
+    refresh: string;
 };
 
 type UserResponse = {
-  id: string;
-  username: string;
-  birthdate: string;
-  email: string;
-  level: number;
-  xp: number;
+    id: string;
+    username: string;
+    birthdate: string;
+    email: string;
+    level: number;
+    xp: number;
 };
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
-  ) {}
+    constructor(
+        private readonly usersService: UsersService,
+        private readonly jwtService: JwtService,
+        private readonly prismaService: PrismaService,
+        private readonly configService: ConfigService
+    ) {}
 
-  async register({
-    password,
-    ...dto
-  }: RegisterDto): Promise<UserResponse & Tokens> {
-    const isUserExists = await this.usersService.findByEmail(dto.email);
+    async register({
+        password,
+        ...dto
+    }: RegisterDto): Promise<UserResponse & Tokens> {
+        const isUserExists = await this.usersService.findByEmail(dto.email);
 
-    if (isUserExists) {
-      throw new ConflictException('Email already in use');
+        if (isUserExists) {
+            throw new ConflictException('Email already in use');
+        }
+
+        const passwordHash = await bcrypt.hash(password, HASH_SALT_ROUNDS);
+
+        const user = await this.usersService.create({
+            ...dto,
+            passwordHash,
+        });
+
+        const tokens = await this.generateTokens(user);
+
+        return {
+            ...tokens,
+            id: user.id,
+            username: user.username,
+            birthdate: user.birthDate.toISOString(),
+            email: user.email,
+            level: user.level,
+            xp: user.xp,
+        };
     }
 
-    const passwordHash = await bcrypt.hash(password, HASH_SALT_ROUNDS);
+    async login(dto: LoginDto): Promise<UserResponse & Tokens> {
+        const { email } = dto;
 
-    const user = await this.usersService.create({
-      ...dto,
-      passwordHash,
-    });
+        const user = await this.usersService.findByEmail(email);
 
-    const tokens = await this.generateTokens(user);
+        if (!user) {
+            throw new NotFoundException('Invalid email or password');
+        }
 
-    return {
-      ...tokens,
-      id: user.id,
-      username: user.username,
-      birthdate: user.birthDate.toISOString(),
-      email: user.email,
-      level: user.level,
-      xp: user.xp,
-    };
-  }
+        const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
+        if (!isMatch) {
+            throw new NotFoundException('Invalid email or password');
+        }
 
-  async login(dto: LoginDto): Promise<UserResponse & Tokens> {
-    const { email } = dto;
+        const tokens = await this.generateTokens(user);
 
-    const user = await this.usersService.findByEmail(email);
-
-    if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+        return {
+            ...tokens,
+            id: user.id,
+            username: user.username,
+            birthdate: user.birthDate.toISOString(),
+            email: user.email,
+            level: user.level,
+            xp: user.xp,
+        };
     }
 
-    const isMatch = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid email or password');
+    async refresh(refreshToken: string) {
+        const jwtRefreshSecret =
+            this.configService.get<string>('JWT_REFRESH_SECRET');
+
+        if (!jwtRefreshSecret) {
+            throw new Error('JWT_SECRET not set in config');
+        }
+
+        let payload: { sub: string; email: string };
+
+        try {
+            payload = this.jwtService.verify(refreshToken, {
+                secret: jwtRefreshSecret,
+            });
+        } catch {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+
+        const user = await this.usersService.findById(payload.sub);
+        if (!user || !user.currentHashedRefreshToken) {
+            throw new UnauthorizedException('Refresh token not found');
+        }
+
+        const isValid = await bcrypt.compare(
+            refreshToken,
+            user.currentHashedRefreshToken
+        );
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+
+        return this.generateTokens(user);
     }
 
-    const tokens = await this.generateTokens(user);
+    private async generateTokens(user: User) {
+        const payload = { sub: user.id, email: user.email };
 
-    return {
-      ...tokens,
-      id: user.id,
-      username: user.username,
-      birthdate: user.birthDate.toISOString(),
-      email: user.email,
-      level: user.level,
-      xp: user.xp,
-    };
-  }
+        const access = this.jwtService.sign(payload, { expiresIn: '15m' });
+        const refresh = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-  async refresh(refreshToken: string) {
-    const jwtRefreshSecret =
-      this.configService.get<string>('JWT_REFRESH_SECRET');
+        const hashedRefreshToken = await bcrypt.hash(refresh, HASH_SALT_ROUNDS);
 
-    if (!jwtRefreshSecret) {
-      throw new Error('JWT_SECRET not set in config');
+        await this.prismaService.user.update({
+            where: { id: user.id },
+            data: { currentHashedRefreshToken: hashedRefreshToken },
+        });
+
+        return { access, refresh };
     }
-
-    let payload: { sub: string; email: string };
-
-    try {
-      payload = this.jwtService.verify(refreshToken, {
-        secret: jwtRefreshSecret,
-      });
-    } catch {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    const user = await this.usersService.findById(payload.sub);
-    if (!user || !user.currentHashedRefreshToken) {
-      throw new UnauthorizedException('Refresh token not found');
-    }
-
-    const isValid = await bcrypt.compare(
-      refreshToken,
-      user.currentHashedRefreshToken,
-    );
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-
-    return this.generateTokens(user);
-  }
-
-  private async generateTokens(user: User) {
-    const payload = { sub: user.id, email: user.email };
-
-    const access = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refresh = this.jwtService.sign(payload, { expiresIn: '7d' });
-
-    const hashedRefreshToken = await bcrypt.hash(refresh, HASH_SALT_ROUNDS);
-    await this.usersService.setCurrentRefreshToken(user.id, hashedRefreshToken);
-
-    return { access, refresh };
-  }
 }

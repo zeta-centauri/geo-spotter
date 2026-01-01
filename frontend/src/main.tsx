@@ -1,4 +1,3 @@
-import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider as StoreProvider } from 'react-redux';
 import { RouterProvider } from 'react-router-dom';
@@ -10,11 +9,11 @@ import { AppChakraProvider } from 'shared/ui';
 import './css/index.scss';
 
 createRoot(document.getElementById('root')!).render(
-    <StrictMode>
-        <StoreProvider store={store}>
-            <AppChakraProvider forcedTheme="light">
-                <RouterProvider router={mainRouter} />
-            </AppChakraProvider>
-        </StoreProvider>
-    </StrictMode>
+    // <StrictMode>
+    <StoreProvider store={store}>
+        <AppChakraProvider forcedTheme="light">
+            <RouterProvider router={mainRouter} />
+        </AppChakraProvider>
+    </StoreProvider>
+    // </StrictMode>
 );

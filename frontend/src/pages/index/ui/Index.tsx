@@ -15,7 +15,7 @@ const Index = () => {
             return;
         }
 
-        // navigate('/lessons');
+        navigate('/home');
     }, []);
 
     return (

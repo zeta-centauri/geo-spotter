@@ -17,16 +17,37 @@ model User {
   level        Int      @default(0)
   xp           Int      @default(0)
   birthDate    DateTime @default(now()) @map("birth_date")
+  avatarUrl    String?  @map("avatar_url")
 
   currentHashedRefreshToken String? @map("current_hashed_refresh_token")
 
-  achievements UserAchievement[]
-  tasksResults UserTaskResult[]
+  achievements         UserAchievement[]
+  tasksResults         UserTaskResult[]
+  friendshipsInitiated Friendship[]      @relation("FriendshipInitiator")
+  friendshipsReceived  Friendship[]      @relation("FriendshipReceiver")
 
   createdAt DateTime @default(now()) @map("created_ad")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("users")
+}
+
+model Friendship {
+  id String @id @default(uuid())
+
+  requesterId String @map("requester_id")
+  addresseeId String @map("addressee_id")
+
+  requester User @relation("FriendshipInitiator", fields: [requesterId], references: [id])
+  addressee User @relation("FriendshipReceiver", fields: [addresseeId], references: [id])
+
+  status FriendshipStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([requesterId, addresseeId])
+  @@map("friendships")
 }
 
 model Achievement {
@@ -99,4 +120,12 @@ enum Difficulty {
   LEGENDARY
 
   @@map("difficulty_enum")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+
+  @@map("friendship_status")
 }
