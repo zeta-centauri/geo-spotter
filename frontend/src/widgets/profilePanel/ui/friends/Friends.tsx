@@ -5,128 +5,98 @@ import type { User } from 'shared/types';
 
 import { FriendItem } from './FriendItem';
 
-export type Friend = Omit<User, 'email' | 'birthdate' | 'xp'>;
+export type Friend = Omit<User, 'email' | 'birthDate' | 'xp'>;
 
 const mockFriends: Friend[] = [
     {
         id: '1',
         username: 'Dasha',
         level: 88,
+        avatarUrl: null,
     },
     {
         id: '2',
         username: 'Amir',
         level: 13,
+        avatarUrl: null,
     },
     {
         id: '3',
         username: 'Julia',
         level: 42,
+        avatarUrl: null,
     },
     {
         id: '4',
         username: 'Alina',
         level: 69,
+        avatarUrl: null,
     },
     {
         id: '1',
         username: 'Dasha',
         level: 88,
+        avatarUrl: null,
     },
     {
         id: '2',
         username: 'Amir',
         level: 13,
+        avatarUrl: null,
     },
     {
         id: '3',
         username: 'Julia',
         level: 42,
+        avatarUrl: null,
     },
     {
         id: '4',
         username: 'Alina',
         level: 69,
+        avatarUrl: null,
     },
     {
         id: '1',
         username: 'Dasha',
         level: 88,
+        avatarUrl: null,
     },
     {
         id: '2',
         username: 'Amir',
         level: 13,
+        avatarUrl: null,
     },
     {
         id: '3',
         username: 'Julia',
         level: 42,
+        avatarUrl: null,
     },
     {
         id: '4',
         username: 'Alina',
         level: 69,
+        avatarUrl: null,
     },
     {
         id: '1',
         username: 'Dasha',
         level: 88,
+        avatarUrl: null,
     },
     {
         id: '2',
         username: 'Amir',
         level: 13,
+        avatarUrl: null,
     },
     {
         id: '3',
         username: 'Julia',
         level: 42,
-    },
-    {
-        id: '4',
-        username: 'Alina',
-        level: 69,
-    },
-    {
-        id: '1',
-        username: 'Dasha',
-        level: 88,
-    },
-    {
-        id: '2',
-        username: 'Amir',
-        level: 13,
-    },
-    {
-        id: '3',
-        username: 'Julia',
-        level: 42,
-    },
-    {
-        id: '4',
-        username: 'Alina',
-        level: 69,
-    },
-    {
-        id: '1',
-        username: 'Dasha',
-        level: 88,
-    },
-    {
-        id: '2',
-        username: 'Amir',
-        level: 13,
-    },
-    {
-        id: '3',
-        username: 'Julia',
-        level: 42,
-    },
-    {
-        id: '4',
-        username: 'Alina',
-        level: 69,
+        avatarUrl: null,
     },
 ];
 
@@ -154,8 +124,8 @@ export const Friends = () => {
             </InputGroup>
 
             <VStack w="full" overflowY="scroll">
-                {mockFriends.map((friend) => (
-                    <FriendItem {...friend} key={friend.id} />
+                {mockFriends.map((friend, index) => (
+                    <FriendItem {...friend} key={index} />
                 ))}
             </VStack>
         </Flex>

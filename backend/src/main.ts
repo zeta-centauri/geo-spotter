@@ -15,11 +15,14 @@ async function bootstrap() {
         })
     );
 
-    app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+    app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
 
-    app.enableCors();
+    app.enableCors({
+        origin: 'http://localhost:5173',
+        credentials: true,
+    });
 
-    await app.listen(process.env.PORT ?? 3000);
+    await app.listen(process.env.API_PORT ?? 3000);
 }
 
 void bootstrap();

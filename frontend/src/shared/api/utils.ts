@@ -6,6 +6,8 @@ import {
 } from '@reduxjs/toolkit/query';
 import { Mutex } from 'async-mutex';
 
+import { removeUserInfo } from 'shared/lib';
+
 import {
     getAccessToken,
     getRefreshToken,
@@ -14,7 +16,6 @@ import {
     setAccessToken,
     setRefreshToken,
 } from './tokensUtils';
-import { removeUserInfo } from '../lib';
 
 type Tokens = {
     access: string;
@@ -29,6 +30,7 @@ const baseQuery = fetchBaseQuery({
     baseUrl: getApiUrl(),
     prepareHeaders: (headers) => {
         const token = getAccessToken();
+
         if (token) {
             headers.set('Authorization', `Bearer ${token}`);
         }

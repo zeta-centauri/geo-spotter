@@ -27,6 +27,7 @@ type UserResponse = {
     email: string;
     level: number;
     xp: number;
+    avatarUrl: string | null;
 };
 
 @Injectable()
@@ -65,6 +66,7 @@ export class AuthService {
             email: user.email,
             level: user.level,
             xp: user.xp,
+            avatarUrl: user.avatarUrl,
         };
     }
 
@@ -92,6 +94,7 @@ export class AuthService {
             email: user.email,
             level: user.level,
             xp: user.xp,
+            avatarUrl: user.avatarUrl,
         };
     }
 

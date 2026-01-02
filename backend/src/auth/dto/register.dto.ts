@@ -12,5 +12,5 @@ export class RegisterDto {
     password: string;
 
     @IsDateString()
-    birthdate: string;
+    birthDate: string;
 }

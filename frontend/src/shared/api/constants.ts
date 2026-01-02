@@ -5,3 +5,7 @@ export const apiMethods = {
     patch: 'PATCH',
     delete: 'DELETE',
 } as const;
+
+export const tagTypes = {
+    CurrentUser: 'CurrentUser',
+} as const;

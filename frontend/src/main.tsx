@@ -5,6 +5,7 @@ import { RouterProvider } from 'react-router-dom';
 import { mainRouter } from 'app/router/MainRoute';
 import { store } from 'app/store/store';
 import { AppChakraProvider } from 'shared/ui';
+import { Toaster } from 'shared/ui/chakra/toaster';
 
 import './css/index.scss';
 
@@ -12,7 +13,10 @@ createRoot(document.getElementById('root')!).render(
     // <StrictMode>
     <StoreProvider store={store}>
         <AppChakraProvider forcedTheme="light">
-            <RouterProvider router={mainRouter} />
+            <>
+                <RouterProvider router={mainRouter} />
+                <Toaster />
+            </>
         </AppChakraProvider>
     </StoreProvider>
     // </StrictMode>

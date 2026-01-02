@@ -3,10 +3,22 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Prisma, User } from 'generated/prisma/client';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class UsersService {
-    constructor(private readonly prismaService: PrismaService) {}
+    constructor(
+        private readonly prismaService: PrismaService,
+        private readonly configService: ConfigService
+    ) {}
+
+    getAbsoluteAvatarUrl(relativeUrl: string) {
+        const protocol = this.configService.get<string>('API_PROTOCOL');
+        const host = this.configService.get<string>('API_HOST');
+        const port = this.configService.get<string>('API_PORT');
+
+        return `${protocol}://${host}:${port}${relativeUrl}`;
+    }
 
     async create(dto: CreateUserDto): Promise<User> {
         const user = await this.prismaService.user.create({
@@ -14,7 +26,7 @@ export class UsersService {
                 username: dto.username,
                 email: dto.email,
                 passwordHash: dto.passwordHash,
-                birthDate: dto.birthdate,
+                birthDate: dto.birthDate,
             },
         });
 
@@ -22,23 +34,42 @@ export class UsersService {
     }
 
     async findById(id: string): Promise<User | null> {
-        return await this.prismaService.user.findFirst({
+        const user = await this.prismaService.user.findFirst({
             where: { id },
         });
+
+        if (user && user.avatarUrl) {
+            user.avatarUrl = this.getAbsoluteAvatarUrl(user.avatarUrl);
+        }
+
+        return user;
     }
 
     async findByEmail(email: string): Promise<User | null> {
-        return await this.prismaService.user.findFirst({
+        const user = await this.prismaService.user.findFirst({
             where: { email },
         });
+
+        if (user && user.avatarUrl) {
+            user.avatarUrl = this.getAbsoluteAvatarUrl(user.avatarUrl);
+        }
+
+        return user;
     }
 
     async findAll(): Promise<User[]> {
-        return await this.prismaService.user.findMany();
+        const users = await this.prismaService.user.findMany();
+
+        return users.map((user) => {
+            if (user.avatarUrl) {
+                user.avatarUrl = this.getAbsoluteAvatarUrl(user.avatarUrl);
+            }
+            return user;
+        });
     }
 
     async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-        const { username, email, birthdate } = updateUserDto;
+        const { username, email, birthDate } = updateUserDto;
 
         const isUserExist = await this.prismaService.user.findFirst({
             where: { id },
@@ -52,12 +83,16 @@ export class UsersService {
 
         if (username) data.username = username;
         if (email) data.email = email;
-        if (birthdate) data.birthDate = new Date(birthdate);
+        if (birthDate) data.birthDate = new Date(birthDate);
 
         const user = await this.prismaService.user.update({
             data,
             where: { id },
         });
+
+        if (user.avatarUrl) {
+            user.avatarUrl = this.getAbsoluteAvatarUrl(user.avatarUrl);
+        }
 
         return user;
     }
@@ -67,10 +102,15 @@ export class UsersService {
     }
 
     async updateAvatar(userId: string, filename: string) {
-        const avatarUrl = `/uploads/avatars/${filename}`;
-        return this.prismaService.user.update({
+        const avatarRelativeUrl = `/uploads/avatars/${filename}`;
+
+        await this.prismaService.user.update({
             where: { id: userId },
-            data: { avatarUrl },
+            data: { avatarUrl: avatarRelativeUrl },
         });
+
+        return {
+            avatarUrl: this.getAbsoluteAvatarUrl(avatarRelativeUrl),
+        };
     }
 }
